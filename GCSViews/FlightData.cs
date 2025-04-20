@@ -3325,6 +3325,8 @@ namespace MissionPlanner.GCSViews
             DateTime tsreal = DateTime.Now;
             double taketime = 0;
             double timeerror = 0;
+            
+            var remoteUpdate = new FlightDataRemoteUpdate();
 
             while (!IsHandleCreated)
             {
@@ -3342,12 +3344,15 @@ namespace MissionPlanner.GCSViews
                     continue;
                 }
 
+
+
                 if (!MainV2.comPort.logreadmode)
                 {
                     //await Task.Delay(50); // max is only ever 10 hz but we go a little faster to empty the serial queue
                     Thread.Sleep(50);
-                }
+                    remoteUpdate.UpdateMavStateAsync(MainV2.comPort.MAV.cs);
 
+                }
                 if (this.IsDisposed)
                 {
                     threadrun = false;
@@ -3469,20 +3474,7 @@ namespace MissionPlanner.GCSViews
 
                     if (ts > 0 && ts < 1000)
                         Thread.Sleep((int) ts);
-
-                    // update currentstate of sysids on the port
-                    foreach (var MAV in MainV2.comPort.MAVlist)
-                    {
-                        try
-                        {
-                            MAV.cs.UpdateCurrentSettings(null, false, MainV2.comPort, MAV);
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error(ex);
-                        }
-                    }
-
+                    
                     tracklast = tracklast.AddMilliseconds(ts - act);
                     tunning = tunning.AddMilliseconds(ts - act);
 

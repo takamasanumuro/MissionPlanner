@@ -254,6 +254,34 @@ namespace MissionPlanner
         public float customfield17 { get; set; }
         public float customfield18 { get; set; }
         public float customfield19 { get; set; }
+        
+        //[DisplayText("")]
+        //public float  { get; set; }
+        
+        [DisplayText("Bat BB(V)")]
+        public float TensaoBateriaBombordo { get; set; }
+        
+        [DisplayText("Bat BE(V)")]
+        public float TensaoBateriaBoreste { get; set; }
+        
+        [DisplayText("Barramento(V)")]
+        public float TensaoBarramento { get; set; }
+
+        [DisplayText("Bat AUX(V)")] 
+        public float TensaoBateriaAuxiliar { get; set; }
+
+        [DisplayText("MotorBB(A)")]
+        public float  CorrenteMotorBombordo{ get; set; }
+        
+        [DisplayText("MotorBE(A)")]
+        public float  CorrenteMotorBoreste { get; set; }
+        
+        [DisplayText("BatBB(A)")]
+        public float  CorrenteBateriaBombordo { get; set; }
+        
+        [DisplayText("BatBE(A)")]
+        public float  CorrenteBateriaBoreste { get; set; }
+
 
         // orientation - rads
         [DisplayFieldName("roll.Field")]
@@ -360,7 +388,7 @@ namespace MissionPlanner
 
         [GroupText("Position")]
         [DisplayFieldName("vx.Field")]
-        [DisplayText("Velocity X (ms)")]
+        [DisplayText("Velocity ABC (ms)")]
         public double vx { get; set; }
 
         [DisplayText("Velocity Y (ms)")]
@@ -1245,7 +1273,7 @@ namespace MissionPlanner
         //battery
         [GroupText("Battery")]
         [DisplayFieldName("battery_voltage.Field")]
-        [DisplayText("Bat Voltage (V)")]
+        [DisplayText("Tensão da Bateria (V)")]
         public double battery_voltage
         {
             get => _battery_voltage;
@@ -1972,7 +2000,6 @@ namespace MissionPlanner
         [GroupText("Mount")] public float campointb { get; set; }
 
         [GroupText("Mount")] public float campointc { get; set; }
-
         [GroupText("Mount")] public PointLatLngAlt GimbalPoint { get; set; }
 
         [GroupText("Mount")]
