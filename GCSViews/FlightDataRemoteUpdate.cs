@@ -12,7 +12,7 @@ namespace MissionPlanner.GCSViews
         private static readonly HttpClient HttpClient = new HttpClient();
         private string _token = Environment.GetEnvironmentVariable("INFLUX_TOKEN", EnvironmentVariableTarget.User);
         private const string Org = "Innomaker";
-        private const string Bucket = "Teste";
+        private const string Bucket = "Innoboat";
         private const string Field = "tensao-barramento";
         private const string Url = "http://144.22.131.217:8086";
 
@@ -31,7 +31,7 @@ namespace MissionPlanner.GCSViews
                 var fluxQuery = $@"
                                       from(bucket:""{Bucket}"")
                                       |> range(start: -120m)
-                                      |> filter(fn: (r) => r._measurement == ""Mavproxy"")
+                                      |> filter(fn: (r) => r._measurement == ""Innoboat"")
                                       |> last()";
 
 
@@ -47,6 +47,11 @@ namespace MissionPlanner.GCSViews
                 var tensaoBarramento = ParseValueFromResponse(responseBody, "tensao-barramento");
                 var tensaoBombordo = ParseValueFromResponse(responseBody, "[BB]Voltage");
                 var tensaoBoreste = ParseValueFromResponse(responseBody, "[BE]Voltage");
+                var tensaoBateriaAuxiliar = ParseValueFromResponse(responseBody, "tensao-aux");
+                var correnteBateriaBombordo = ParseValueFromResponse(responseBody, "[BB]Current");
+                var correnteBateriaBoreste = ParseValueFromResponse(responseBody, "[BE]Current");
+                var correnteMotorBombordo = ParseValueFromResponse(responseBody, "[BB]Current");
+                var correnteMotorBoreste = ParseValueFromResponse(responseBody, "[BE]Current");
                 
                 if (tensaoBarramento.HasValue)
                 {
@@ -62,6 +67,31 @@ namespace MissionPlanner.GCSViews
                 if (tensaoBoreste.HasValue)
                 {
                     cs.TensaoBateriaBoreste = tensaoBoreste.Value;
+                }
+
+                if (tensaoBateriaAuxiliar.HasValue)
+                {
+                    cs.TensaoBateriaAuxiliar = tensaoBateriaAuxiliar.Value;
+                }
+
+                if (correnteBateriaBombordo.HasValue)
+                {
+                    cs.CorrenteBateriaBombordo = correnteBateriaBombordo.Value;
+                }
+                
+                if (correnteBateriaBoreste.HasValue)
+                {
+                    cs.CorrenteBateriaBoreste = correnteBateriaBoreste.Value;
+                }
+
+                if (correnteMotorBoreste.HasValue)
+                {
+                    cs.CorrenteMotorBoreste = correnteMotorBoreste.Value;
+                }
+                
+                if (correnteMotorBombordo.HasValue)
+                {
+                    cs.CorrenteMotorBombordo = correnteMotorBombordo.Value;
                 }
                 
             }
