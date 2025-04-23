@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Globalization;
+using System.Threading;
 
 
 namespace MissionPlanner.GCSViews
@@ -10,17 +11,16 @@ namespace MissionPlanner.GCSViews
     public class FlightDataRemoteUpdate
     {
         private static readonly HttpClient HttpClient = new HttpClient();
-        private string _token = Environment.GetEnvironmentVariable("INFLUX_TOKEN", EnvironmentVariableTarget.User);
+        private readonly string _token = Environment.GetEnvironmentVariable("INFLUX_TOKEN", EnvironmentVariableTarget.User);
         private const string Org = "Innomaker";
-        private const string Bucket = "Innoboat";
-        private const string Field = "tensao-barramento";
+        private const string Bucket = "Teste";
         private const string Url = "http://144.22.131.217:8086";
 
         public FlightDataRemoteUpdate()
         {
+            HttpClient.DefaultRequestHeaders.Clear(); 
             HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Token", _token);
             HttpClient.DefaultRequestHeaders.ConnectionClose = false;
-            HttpClient.DefaultRequestHeaders.Connection.Add("keep-alive");
             HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/csv"));;
         }
 
@@ -44,55 +44,23 @@ namespace MissionPlanner.GCSViews
                 response.EnsureSuccessStatusCode();
                 var responseBody = await response.Content.ReadAsStringAsync();
 
-                var tensaoBarramento = ParseValueFromResponse(responseBody, "tensao-barramento");
-                var tensaoBombordo = ParseValueFromResponse(responseBody, "[BB]Voltage");
-                var tensaoBoreste = ParseValueFromResponse(responseBody, "[BE]Voltage");
-                var tensaoBateriaAuxiliar = ParseValueFromResponse(responseBody, "tensao-aux");
-                var correnteBateriaBombordo = ParseValueFromResponse(responseBody, "[BB]Current");
-                var correnteBateriaBoreste = ParseValueFromResponse(responseBody, "[BE]Current");
-                var correnteMotorBombordo = ParseValueFromResponse(responseBody, "[BB]Current");
-                var correnteMotorBoreste = ParseValueFromResponse(responseBody, "[BE]Current");
-                
-                if (tensaoBarramento.HasValue)
+                void SetIfPresent(string field, Action<float> setter)
                 {
-                    cs.TensaoBarramento = tensaoBarramento.Value;
-                    
-                }
-
-                if (tensaoBombordo.HasValue)
-                {
-                    cs.TensaoBateriaBombordo = tensaoBombordo.Value;
+                    var value = ParseValueFromResponse(responseBody, field);
+                    if (value.HasValue)
+                    {
+                        setter(value.Value);
+                    }
                 }
                 
-                if (tensaoBoreste.HasValue)
-                {
-                    cs.TensaoBateriaBoreste = tensaoBoreste.Value;
-                }
-
-                if (tensaoBateriaAuxiliar.HasValue)
-                {
-                    cs.TensaoBateriaAuxiliar = tensaoBateriaAuxiliar.Value;
-                }
-
-                if (correnteBateriaBombordo.HasValue)
-                {
-                    cs.CorrenteBateriaBombordo = correnteBateriaBombordo.Value;
-                }
-                
-                if (correnteBateriaBoreste.HasValue)
-                {
-                    cs.CorrenteBateriaBoreste = correnteBateriaBoreste.Value;
-                }
-
-                if (correnteMotorBoreste.HasValue)
-                {
-                    cs.CorrenteMotorBoreste = correnteMotorBoreste.Value;
-                }
-                
-                if (correnteMotorBombordo.HasValue)
-                {
-                    cs.CorrenteMotorBombordo = correnteMotorBombordo.Value;
-                }
+                SetIfPresent("[BB]Voltage", value => cs.TensaoBateriaBombordo = value);
+                SetIfPresent("[BO]Voltage", value => cs.TensaoBateriaBoreste = value);
+                SetIfPresent("[BB]Current", value => cs.CorrenteBateriaBombordo = value);
+                SetIfPresent("[BO]Current", value => cs.CorrenteBateriaBoreste = value);
+                SetIfPresent("tensao-barramento", value => cs.TensaoBarramento = value);
+                SetIfPresent("tensao-aux", value =>cs.TensaoBateriaAuxiliar = value);
+                SetIfPresent("corrente-motor-bombordo", value => cs.CorrenteMotorBombordo = value); 
+                SetIfPresent("corrente-motor-boreste", value => cs.CorrenteMotorBoreste = value);
                 
             }
             catch (Exception ex)
@@ -124,28 +92,29 @@ namespace MissionPlanner.GCSViews
             return null;
         }
 
+        private readonly SemaphoreSlim _fetchLock = new SemaphoreSlim(1, 1);
+
         public void UpdateMavStateAsync(CurrentState cs)
         {
-            try
+            _ = Task.Run(async () =>
             {
-                _ = Task.Run(async () =>
+                if (!await _fetchLock.WaitAsync(0))
                 {
-                    try
-                    {
-                        await FetchUpdateForMavAsync(cs);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"FetchUpdateForMAVAsync failed {ex.Message}");
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
+                    return;
+                }
+                try
+                {
+                    await FetchUpdateForMavAsync(cs);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"FetchUpdateForMAVAsync failed {ex.Message}");
+                }
+                finally
+                {
+                    _fetchLock.Release();
+                }
+            });
         }
-        
-        
     }
 }
