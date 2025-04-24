@@ -13,14 +13,14 @@ namespace MissionPlanner.GCSViews
         private static readonly HttpClient HttpClient = new HttpClient();
         private readonly string _token = Environment.GetEnvironmentVariable("INFLUX_TOKEN", EnvironmentVariableTarget.User);
         private const string Org = "Innomaker";
-        private const string Bucket = "Teste";
+        private const string Bucket = "Innoboat";
         private const string Url = "http://144.22.131.217:8086";
 
         public FlightDataRemoteUpdate()
         {
             HttpClient.DefaultRequestHeaders.Clear(); 
             HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Token", _token);
-            HttpClient.DefaultRequestHeaders.ConnectionClose = false;
+            HttpClient.DefaultRequestHeaders.Add("Connection", "keep-alive");
             HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/csv"));;
         }
 
@@ -96,12 +96,11 @@ namespace MissionPlanner.GCSViews
 
         public void UpdateMavStateAsync(CurrentState cs)
         {
+            
+            if (!_fetchLock.Wait(0)) return;
+            
             _ = Task.Run(async () =>
             {
-                if (!await _fetchLock.WaitAsync(0))
-                {
-                    return;
-                }
                 try
                 {
                     await FetchUpdateForMavAsync(cs);

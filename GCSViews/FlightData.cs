@@ -3325,6 +3325,8 @@ namespace MissionPlanner.GCSViews
             DateTime tsreal = DateTime.Now;
             double taketime = 0;
             double timeerror = 0;
+            
+            var remoteUpdate = new FlightDataRemoteUpdate();
 
             while (!IsHandleCreated)
             {
@@ -3342,7 +3344,7 @@ namespace MissionPlanner.GCSViews
                     continue;
                 }
 
-                var remoteUpdate = new FlightDataRemoteUpdate();
+
 
                 if (!MainV2.comPort.logreadmode)
                 {
